@@ -1,0 +1,158 @@
+use async_openai::{
+    types::{
+        ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs,
+        ChatCompletionRequestUserMessageArgs, ChatCompletionResponseFormat,
+        ChatCompletionResponseFormatType, CreateChatCompletionRequestArgs, FinishReason,
+    },
+    Client,
+};
+use dotenv::dotenv;
+use futures::StreamExt;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
+use std::env;
+use std::fs;
+use std::io::stdout;
+use std::io::Write;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // let file_path = "/Users/jichen/Projects/gpt-generation-to-github/book.txt";
+    // let file_path = "k8s.md";
+
+    let json_contents = include_str!("../rust_chapter.json");
+
+    let data: Vec<String> = serde_json::from_str(json_contents).expect("failed to parse json");
+    let mut count = 0;
+    let chunks_len = data.len();
+    if let Ok(Some(qa_pairs)) = gen_pair(data).await {
+        for (question, answer) in qa_pairs {
+            count += 1;
+            println!(
+                "{} Q: {} \t A: {}\n",
+                count,
+                question.chars().take(30).collect::<String>(),
+                answer.chars().take(30).collect::<String>()
+            );
+        }
+    }
+
+    // println!("{:?}\n", formatted_answer);
+
+    Ok(())
+}
+pub async fn gen_pair(
+    input_vec: Vec<String>,
+) -> Result<Option<Vec<(String, String)>>, Box<dyn std::error::Error>> {
+    #[derive(Deserialize)]
+    struct QaPair {
+        question: String,
+        answer: String,
+    }
+    let sys_prompt = env::var("SYS_PROMPT").unwrap_or(
+        "As a highly skilled assistant, you are tasked with generating informative question and answer pairs from the provided text. Focus on crafting Q&A pairs that are relevant to the primary subject matter of the text. Your questions should be engaging and answers concise, avoiding details of specific examples that are not representative of the text's broader themes. Aim for a comprehensive understanding that captures the essence of the content without being sidetracked by less relevant details."
+    .into());
+
+    let mut qa_pairs_vec = Vec::new();
+    let client = Client::new();
+
+    for msg in &input_vec {
+        let head = msg.chars().take(20).collect::<String>();
+        println!("Processing: {}...", head);
+        let user_input = format!("
+        Here is the user input to work with:
+        ---
+        {}
+        ---
+        Your task is to dissect this text for its central themes and most significant details, crafting question and answer pairs that reflect the core message and primary content. Avoid questions about specific examples that do not contribute to the overall understanding of the subject. The questions should cover different types: factual, inferential, thematic, etc., and answers must be concise and pertinent to the text's main intent. Please generate as many relevant question and answers as possible, focusing on the significance and relevance of each to the text's main topic. Provide the results in the following JSON format:
+        {{
+            \"qa_pairs\": [
+                {{
+                    \"question\": \"<Your question>\",
+                    \"answer\": \"<Your answer>\"
+                }},
+                // ... additional Q&A pairs based on text relevance
+            ]
+        }}",
+        msg
+        );
+        let messages = vec![
+            ChatCompletionRequestSystemMessageArgs::default()
+                .content(&sys_prompt)
+                .build()
+                .expect("Failed to build system message")
+                .into(),
+            ChatCompletionRequestUserMessageArgs::default()
+                .content(user_input)
+                .build()?
+                .into(),
+        ];
+
+        let response_format = ChatCompletionResponseFormat {
+            r#type: ChatCompletionResponseFormatType::JsonObject,
+        };
+
+        let request = CreateChatCompletionRequestArgs::default()
+            // .max_tokens(6000u16)
+            .model("gpt-3.5-turbo-1106")
+            .messages(messages)
+            .response_format(response_format)
+            .build()?;
+
+        let stream_result = client.chat().create_stream(request).await;
+        let mut stream = match stream_result {
+            Ok(stream) => stream,
+            Err(err) => {
+                eprintln!("Failed to create stream: {:?}", err);
+                continue; // Skip this message and continue with the next one
+            }
+        };
+
+        let mut lock = stdout().lock();
+        println!("Stream created, waiting for responses...");
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(response) => {
+                    println!("Response received: {:?}", response);
+                    for chat_choice in response.choices.iter() {
+                        // Assuming chat_choice.delta.content is a String containing JSON
+                        if let Some(qa_pairs_json) = &chat_choice.delta.content {
+                            match serde_json::from_str::<HashMap<String, Vec<QaPair>>>(
+                                qa_pairs_json,
+                            ) {
+                                Ok(deserialized) => {
+                                    if let Some(qa_pairs) = deserialized.get("qa_pairs") {
+                                        let pairs = qa_pairs
+                                            .iter()
+                                            .map(|qa| (qa.question.clone(), qa.answer.clone()))
+                                            .collect::<Vec<(String, String)>>();
+                                        qa_pairs_vec.extend(pairs);
+                                    }
+                                }
+                                Err(err) => {
+                                    eprintln!("Failed to deserialize response JSON: {}", err);
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(err) => {
+                    writeln!(lock, "Stream error: {}", err)?;
+                    lock.flush()?;
+                }
+            }
+            lock.flush()?;
+        }
+    }
+    let json_value = json!(qa_pairs_vec
+        .iter()
+        .map(|(question, answer)| json!({question: answer}))
+        .collect::<Vec<_>>());
+
+    let json_string = serde_json::to_string_pretty(&json_value)?;
+
+    fs::write("generated_qa.json", json_string)?;
+
+    Ok(Some(qa_pairs_vec))
+}
