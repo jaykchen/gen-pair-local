@@ -1,0 +1,5 @@
+1) if there are multiple headers in a roll, keep them excluding the last one as separate text blocks, keep the last header with the content that goes after it immediately as one text block;
+2) The one Header and all the content before the next Header, belong to one segment;
+3) the Header or other text block types like Para, before BulletList, belong to one segment;
+4) the Header or other text block types like Para, before CodeBlock, RawBlock, belong to one segment;
+5) several adjacent text block types separated by SoftBreak, appearing like a list, belong to one segment;
