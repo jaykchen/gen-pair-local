@@ -1,13 +1,12 @@
 use async_openai::{
     types::{
-        ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs,
-        ChatCompletionRequestUserMessageArgs, ChatCompletionResponseFormat,
-        ChatCompletionResponseFormatType, CreateChatCompletionRequestArgs, FinishReason,
+        ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
+        ChatCompletionResponseFormat, ChatCompletionResponseFormatType,
+        CreateChatCompletionRequestArgs,
     },
     Client,
 };
-use dotenv::dotenv;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::env;
@@ -15,14 +14,10 @@ use std::fs;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let file_path = "/Users/jichen/Projects/gpt-generation-to-github/book.txt";
-    // let file_path = "k8s.md";
-
-    let json_contents = include_str!("../rust_chapter.json");
+    let json_contents = include_str!("../segmented_text.json");
 
     let data: Vec<String> = serde_json::from_str(json_contents).expect("failed to parse json");
     let mut count = 0;
-    let chunks_len = data.len();
     if let Ok(Some(qa_pairs)) = gen_pair(data).await {
         for (question, answer) in qa_pairs {
             count += 1;
@@ -34,8 +29,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
     }
-
-    // println!("{:?}\n", formatted_answer);
 
     Ok(())
 }

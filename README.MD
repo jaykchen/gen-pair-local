@@ -25,3 +25,4 @@ Step 1: run the Rust project
 
 Please mannually specify the .json file that contains the list of segmented text generated from the previous stage in the main.rs file
 
+Note: The async_openai library that we use to interact with OpenAI's API assumes OpenAI's api key is present in its envrioment under "OPENAI_API_KEY"
