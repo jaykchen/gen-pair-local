@@ -7,14 +7,11 @@ use async_openai::{
     Client,
 };
 use dotenv::dotenv;
-use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
-use std::io::stdout;
-use std::io::Write;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -100,49 +97,29 @@ pub async fn gen_pair(
             .response_format(response_format)
             .build()?;
 
-        let stream_result = client.chat().create_stream(request).await;
-        let mut stream = match stream_result {
-            Ok(stream) => stream,
+        let chat = match client.chat().create(request).await {
+            Ok(chat) => chat,
             Err(err) => {
-                eprintln!("Failed to create stream: {:?}", err);
+                eprintln!("Failed to create chat: {:?}", err);
                 continue; // Skip this message and continue with the next one
             }
         };
 
-        let mut lock = stdout().lock();
-        println!("Stream created, waiting for responses...");
-        while let Some(result) = stream.next().await {
-            match result {
-                Ok(response) => {
-                    println!("Response received: {:?}", response);
-                    for chat_choice in response.choices.iter() {
-                        // Assuming chat_choice.delta.content is a String containing JSON
-                        if let Some(qa_pairs_json) = &chat_choice.delta.content {
-                            match serde_json::from_str::<HashMap<String, Vec<QaPair>>>(
-                                qa_pairs_json,
-                            ) {
-                                Ok(deserialized) => {
-                                    if let Some(qa_pairs) = deserialized.get("qa_pairs") {
-                                        let pairs = qa_pairs
-                                            .iter()
-                                            .map(|qa| (qa.question.clone(), qa.answer.clone()))
-                                            .collect::<Vec<(String, String)>>();
-                                        qa_pairs_vec.extend(pairs);
-                                    }
-                                }
-                                Err(err) => {
-                                    eprintln!("Failed to deserialize response JSON: {}", err);
-                                }
-                            }
-                        }
+        if let Some(qa_pairs_json) = &chat.choices[0].message.content {
+            match serde_json::from_str::<HashMap<String, Vec<QaPair>>>(qa_pairs_json) {
+                Ok(deserialized) => {
+                    if let Some(qa_pairs) = deserialized.get("qa_pairs") {
+                        let pairs = qa_pairs
+                            .iter()
+                            .map(|qa| (qa.question.clone(), qa.answer.clone()))
+                            .collect::<Vec<(String, String)>>();
+                        qa_pairs_vec.extend(pairs);
                     }
                 }
                 Err(err) => {
-                    writeln!(lock, "Stream error: {}", err)?;
-                    lock.flush()?;
+                    eprintln!("Failed to deserialize response JSON: {}", err);
                 }
             }
-            lock.flush()?;
         }
     }
     let json_value = json!(qa_pairs_vec

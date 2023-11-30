@@ -1,3 +1,4 @@
 /target
 .env
 book.txt
+generated_qa.json
