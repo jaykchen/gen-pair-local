@@ -426,7 +426,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gen-pair-local"
+name = "gen_pair_local"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -435,6 +435,7 @@ dependencies = [
  "csv",
  "dotenv",
  "futures",
+ "pandoc_types",
  "serde",
  "serde_json",
  "tokio",
@@ -790,6 +791,16 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
+
+[[package]]
+name = "pandoc_types"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16172f24b8ad7f0ded9947f3d33f0344bc4d4e7c4937a2a0c405447403211434"
+dependencies = [
+ "serde",
+ "serde_tuple",
+]
 
 [[package]]
 name = "parking_lot"
@@ -1154,6 +1165,27 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serde_tuple"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4f025b91216f15a2a32aa39669329a475733590a015835d1783549a56d09427"
+dependencies = [
+ "serde",
+ "serde_tuple_macros",
+]
+
+[[package]]
+name = "serde_tuple_macros"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4076151d1a2b688e25aaf236997933c66e18b870d0369f8b248b8ab2be630d7e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
