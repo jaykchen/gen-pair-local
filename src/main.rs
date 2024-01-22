@@ -10,57 +10,19 @@ use async_openai::{
 };
 use serde::Deserialize;
 use serde_json::json;
-use core::panic;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
-use pandoc::{ self, OutputKind, PandocOutput };
-use pandoc_ast::{ Pandoc, Inline, Block };
 use std::{ fs::File };
 use std::io::Write;
-use gen_pair_local::{ stringify_block, stringify_inline };
+use gen_pair_local::{ convert_to_text_vec };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut pandoc = pandoc::new();
-
     let input_file = "src/k8s.md";
 
-    pandoc.add_input(input_file);
-    pandoc.set_output_format(pandoc::OutputFormat::Json, vec![]);
-    pandoc.set_output(OutputKind::Pipe);
-    let pandoc_output = pandoc.execute()?;
-    let pandoc_data: Pandoc = match pandoc_output {
-        PandocOutput::ToBuffer(content) => Pandoc::from_json(&content),
-        _ => panic!("Invalid output"),
-    };
-
-    let mut segments: Vec<Vec<String>> = Vec::new();
-    let mut current_segment: Vec<String> = Vec::new();
-
-    for block in pandoc_data.blocks.iter() {
-        match block {
-            Block::Header(_, _, inline) => {
-                if !current_segment.is_empty() {
-                    segments.push(current_segment);
-                }
-                current_segment = Vec::new(); // Start a new segment
-                let header_text = inline.iter().map(stringify_inline).collect();
-                current_segment.push(header_text);
-            }
-            _ => {
-                let content = stringify_block(block);
-                if !content.is_empty() {
-                    current_segment.push(content);
-                }
-            }
-        }
-    }
-
-    if !current_segment.is_empty() {
-        segments.push(current_segment);
-    }
-    let json_output = serde_json::to_string_pretty(&segments).unwrap();
+    let converted = convert_to_text_vec(input_file)?;
+    let json_output = serde_json::to_string_pretty(&converted).unwrap();
 
     let mut file = File::create("segmented_text.json").expect(
         "Error creating file `segmented_text.json`"
