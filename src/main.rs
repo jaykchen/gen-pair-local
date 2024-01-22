@@ -8,8 +8,6 @@ use async_openai::{
     },
     Client,
 };
-use gen_pair_local::Document;
-use pandoc_types::definition::*;
 use serde::Deserialize;
 use serde_json::json;
 use core::panic;
@@ -17,8 +15,10 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use pandoc::{ self, OutputKind, PandocOutput };
-use serde_json::from_reader;
-use std::{ any, fs::File, path };
+use pandoc_ast::{ Pandoc, Inline, Block };
+use std::{ fs::File };
+use std::io::Write;
+use gen_pair_local::{ stringify_block, stringify_inline };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -31,32 +31,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pandoc.set_output(OutputKind::Pipe);
     let pandoc_output = pandoc.execute()?;
     let pandoc_data: Pandoc = match pandoc_output {
-        PandocOutput::ToBuffer(content) => content,
+        PandocOutput::ToBuffer(content) => Pandoc::from_json(&content),
         _ => panic!("Invalid output"),
     };
 
-    let mut doc = Document::new();
-    for block in &pandoc_data.blocks {
-        doc.action(&block);
-    }
+    let mut segments: Vec<Vec<String>> = Vec::new();
+    let mut current_segment: Vec<String> = Vec::new();
 
-    doc.finalize();
-    println!("{:#?}", pandoc_data);
-
-    return Ok(());
-    let data: Vec<String> = serde_json::from_str(json_contents).expect("failed to parse json");
-    let mut count = 0;
-    if let Ok(Some(qa_pairs)) = gen_pair(data).await {
-        for (question, answer) in qa_pairs {
-            count += 1;
-            println!(
-                "{} Q: {} \t A: {}\n",
-                count,
-                question.chars().take(30).collect::<String>(),
-                answer.chars().take(30).collect::<String>()
-            );
+    for block in pandoc_data.blocks.iter() {
+        match block {
+            Block::Header(_, _, inline) => {
+                if !current_segment.is_empty() {
+                    segments.push(current_segment);
+                }
+                current_segment = Vec::new(); // Start a new segment
+                let header_text = inline.iter().map(stringify_inline).collect();
+                current_segment.push(header_text);
+            }
+            _ => {
+                let content = stringify_block(block);
+                if !content.is_empty() {
+                    current_segment.push(content);
+                }
+            }
         }
     }
+
+    if !current_segment.is_empty() {
+        segments.push(current_segment);
+    }
+    let json_output = serde_json::to_string_pretty(&segments).unwrap();
+
+    let mut file = File::create("segmented_text.json").expect(
+        "Error creating file `segmented_text.json`"
+    );
+    file.write_all(json_output.as_bytes()).expect("Error writing to file `segmented_text.json`");
 
     Ok(())
 }

@@ -7,7 +7,16 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6ea1aeee-26e3-4436-87a9-6428f7a46259" name="Changes" comment="">
+    <list default="true" id="bb4e427c-989c-4842-ad21-3efec65c8c8a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/gen-pair-local.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/k8s.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/output.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/segmented_text.json" beforeDir="false" afterPath="$PROJECT_DIR$/segmented_text.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
     </list>
@@ -20,15 +29,16 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
-    <option name="directoryName" value="wka18p02" />
+    <option name="directoryName" value="r5dro4wl" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
   <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
   "associatedIndex": 5
 }]]></component>
-  <component name="ProjectId" id="2bGvbkUnqoIlrUu3Vuo8d0MBs7D" />
+  <component name="ProjectId" id="2bKME6Fr8rQnvEthLPLqOtu6f5D" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -90,12 +100,12 @@
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="6ea1aeee-26e3-4436-87a9-6428f7a46259" name="Changes" comment="" />
-      <created>1705854304038</created>
+      <changelist id="bb4e427c-989c-4842-ad21-3efec65c8c8a" name="Changes" comment="" />
+      <created>1705959203314</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1705854304038</updated>
-      <workItem from="1705854305039" duration="1542000" />
+      <updated>1705959203314</updated>
+      <workItem from="1705959204522" duration="494000" />
     </task>
     <servers />
   </component>
