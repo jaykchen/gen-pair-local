@@ -8,22 +8,33 @@ use async_openai::{
     },
     Client,
 };
+use gen_pair_local::Document;
+use pandoc_types::definition::*;
 use serde::Deserialize;
 use serde_json::json;
+use core::panic;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
-use pandoc_types::definition::*;
-use gen_pair_local::Document;
-
+use pandoc::{ self, OutputKind, PandocOutput };
+use serde_json::from_reader;
+use std::{ any, fs::File, path };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let json_contents = include_str!("../segmented_text.json");
+    let mut pandoc = pandoc::new();
 
-    let raw_md = include_str!("../k8s.json");
+    let input_file = "src/k8s.md";
 
-    let pandoc_data: Pandoc = serde_json::from_str(raw_md).expect("failed to parse json");
+    pandoc.add_input(input_file);
+    pandoc.set_output_format(pandoc::OutputFormat::Json, vec![]);
+    pandoc.set_output(OutputKind::Pipe);
+    let pandoc_output = pandoc.execute()?;
+    let pandoc_data: Pandoc = match pandoc_output {
+        PandocOutput::ToBuffer(content) => content,
+        _ => panic!("Invalid output"),
+    };
+
     let mut doc = Document::new();
     for block in &pandoc_data.blocks {
         doc.action(&block);
